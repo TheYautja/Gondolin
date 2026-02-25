@@ -13,12 +13,29 @@
 #endif
 
 
+size_t strlen(const char* str){
+	size_t len = 0;
+	while(str[len]){
+		len++;
+	}
+	return len;
+}
+
+
+void write_string( int colour, const char *string )
+{
+    volatile char *vmem = (volatile char*)0xB8000;
+    while( *string != 0 )
+    {
+        *video++ = *string++;
+        *video++ = colour;
+    }
+}
+
+
 void kernel_main(void){
 	
-	volatile unsigned char* vmem = (volatile unsigned char*)0xB8000;
-	vmem[0] = 'Y';
-	vmem[1] = 0xf0;
-	vmem[2] = 'o';
-	vmem[3] = 0xf0;
+	const char* out = "bing chilling";
+	write_string(3, out);
 	
 }
