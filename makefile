@@ -1,56 +1,49 @@
-KERNELFOLDER=kernel
-BOOTFOLDER=boot
-LDFOLDER=linker
-FINALDIR=bin
-OUTDIR=obj
+KERNELDIR=kernel
+BOOTDIR=boot
+LDDIR=linker
 ISODIR=isodir
+OBJDIR=obj
+BINDIR=bin
+
 KERNEL=kernel.bin
+ISO=$(BINDIR)/gondolin.iso
 
 CC=/home/augusto/opt/cross/bin/i686-elf-gcc
 AS=/home/augusto/opt/cross/bin/i686-elf-as
 
+CFLAGS=-std=gnu99 -ffreestanding -O2 -Wall -Wextra
+CFLAGS+=$(shell find $(KERNELDIR) -type d -exec echo -I{} \;)
+LDFLAGS=-T $(LDDIR)/linker.ld -ffreestanding -O2 -nostdlib
 
-.PHONY: all clean iso run
+KERNEL_C=$(shell find $(KERNELDIR) -name "*.c")
+KERNEL_O=$(patsubst %.c,$(OBJDIR)/%.o,$(KERNEL_C))
+BOOT_O=$(OBJDIR)/boot.o
 
+.PHONY: all clean iso run dirs
 
-$(OUTDIR):
-	mkdir -p $(OUTDIR)
+dirs:
+	mkdir -p $(OBJDIR) $(BINDIR) $(ISODIR)/boot
+	mkdir -p $(sort $(dir $(KERNEL_O)))
 
-
-$(OUTDIR)/boot.o: $(BOOTFOLDER)/boot.s | $(OUTDIR)
-	@echo "assembling boot.s"
+$(BOOT_O): $(BOOTDIR)/boot.s | dirs
 	$(AS) $< -o $@
-	@echo "done"
 
+$(OBJDIR)/%.o: %.c | dirs
+	$(CC) -c $< -o $@ $(CFLAGS)
 
-$(OUTDIR)/kernel.o: $(KERNELFOLDER)/kernel.c | $(OUTDIR)
-	@echo "building kernel"
-	$(CC) -c $< -o $@ -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-	@echo "done"
-
-
-$(KERNEL): $(OUTDIR)/boot.o $(OUTDIR)/kernel.o
-	@echo "linking kernel"
-	$(CC) -T $(LDFOLDER)/linker.ld -o $@ \
-	      -ffreestanding -O2 -nostdlib \
-	      $^ -lgcc
-
+$(KERNEL): $(BOOT_O) $(KERNEL_O)
+	$(CC) $(LDFLAGS) -o $@ $^ -lgcc
 
 $(ISODIR)/boot/kernel.bin: $(KERNEL)
-	cp $(KERNEL) $(ISODIR)/boot/kernel.bin
-
+	cp $< $@
 
 all: $(KERNEL)
 
 iso: $(ISODIR)/boot/kernel.bin
-	@echo "=================="
-	@echo "building gondolin.iso"
-	grub-mkrescue -o $(FINALDIR)/gondolin.iso $(ISODIR)
-	@echo "done"
-	@echo "=================="
+	grub-mkrescue -o $(ISO) $(ISODIR)
 
 run: iso
-	qemu-system-i386 -cdrom $(FINALDIR)/gondolin.iso
+	qemu-system-i386 -cdrom $(ISO)
 
 clean:
-	rm -f $(OUTDIR)/*.o $(KERNEL)
+	rm -rf $(OBJDIR) $(KERNEL) $(ISO)
