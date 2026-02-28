@@ -18,7 +18,6 @@
 
 void kernel_main(void){
 	
-	const char* out = "bing chilling";
-	write_string(5, out);
+	init_terminal();
 	
 }
