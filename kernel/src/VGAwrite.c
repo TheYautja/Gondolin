@@ -1,8 +1,6 @@
 #include "./headers/VGAwrite.h"
 #include "./headers/utils.h"
 
-#define TWIDTH 80;
-#define THEIGHT 25;
 
 enum vga_color {
 	VGA_BLACK = 0,
@@ -24,12 +22,18 @@ enum vga_color {
 };
 
 
-uint16_t vga_char_color(enum vga_color fg, enum vga_color bg){
+size_t terminal_row = 0;
+size_t terminal_col = 0;
+uint16_t terminal_color = 0;
+uint16_t* terminal_buffer = (uint16_t*)VGA_TEXT_ENTRY;
+
+
+static uint16_t vga_char_color(enum vga_color fg, enum vga_color bg){
 	return fg | bg << 4;
 }
 
 
-uint16_t vga_entry(unsigned char c, uint16_t color){
+static uint16_t vga_entry(unsigned char c, uint16_t color){
 	return (uint16_t) c | (uint16_t) color << 8;
 }
 
@@ -38,16 +42,51 @@ void init_terminal(void){
 	
 	terminal_row = 0;
 	terminal_col = 0;
-	terminal_color = vga_char_color(VGA_GREEN, VGA_DARK_GREY);
+	terminal_color = vga_char_color(VGA_GREEN, VGA_BLACK);
 	
-	for(size_t y = 0; y < THEIGHT; y++){
-		for(size_t x = 0; x < TWIDTH; x++){
-			const size_t index = y * TWIDTH + x;
+	for(size_t y = 0; y < 25; y++){
+		for(size_t x = 0; x < 80; x++){
+			const size_t index = y * 80 + x;
 			terminal_buffer[index] = vga_entry(' ', terminal_color);
 		}
 	}
 	
 }
+
+
+void set_terminal_color(uint16_t color){
+	 terminal_color = color;
+}
+
+
+void terminal_putentry_at(char c, uint8_t color, size_t x, size_t y){
+	const size_t index = y * 80 + x;
+	terminal_buffer[index] = vga_entry(c, color);
+}
+
+
+void terminal_putchar(char c){
+	terminal_putentry_at(c, terminal_color, terminal_col, terminal_row);
+	if(terminal_col == 80){
+		terminal_col = 0;
+		if(terminal_row == 25){
+			terminal_row = 0;
+		}
+	} 
+}
+
+
+void terminal_write(const char* data, size_t lenght){
+	for(size_t i = 0; i < lenght; i++){
+		terminal_putchar(data[i]);
+	}
+}
+
+
+void terminal_writestring(const char* data){
+	terminal_write(data, strlen(data));
+}
+
 
 
 
