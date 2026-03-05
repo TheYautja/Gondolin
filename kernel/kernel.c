@@ -19,6 +19,6 @@
 void kernel_main(void){
 	
 	init_terminal();
-	terminal_writestring("test");
+	terminal_writestring("teste");
 	
 }

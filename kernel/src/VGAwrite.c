@@ -67,9 +67,9 @@ void terminal_putentry_at(char c, uint8_t color, size_t x, size_t y){
 
 void terminal_putchar(char c){
 	terminal_putentry_at(c, terminal_color, terminal_col, terminal_row);
-	if(terminal_col == 80){
+	if(++terminal_col == 80){
 		terminal_col = 0;
-		if(terminal_row == 25){
+		if(++terminal_row == 25){
 			terminal_row = 0;
 		}
 	} 
